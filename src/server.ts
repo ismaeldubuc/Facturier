@@ -3,6 +3,15 @@ import { join } from 'path';
 import cors from "cors";
 import PDFDocument from "pdfkit";
 
+import mysql from 'mysql';
+const connection = mysql.createConnection({
+  host: 'localhost',
+  user: 'root',
+  password: 'root',
+  database: 'factures',
+  socketPath:"/Applications/MAMP/tmp/mysql/mysql.sock"
+})
+
 const PORT = process.env.PORT || 5050;
 
 const app = Express();
@@ -50,7 +59,47 @@ app.post('/', (request: Request, response: Response) => {
 
   pdf.pipe(response);
   pdf.end();
+
+  const prenom = `${request.body.FirstName}`;
+  const nom = `${request.body.lastName}`;
+  const adresse = `${request.body.address}`;
+  const pays = `${request.body.country}`;
+  const commune = `${request.body.town}`;
+  const codePostal = `${request.body.zip}`;
+  const produit = `${request.body.product}`;
+  const prix = `${request.body.price}`;
+  const quantite = `${request.body.quantity}`;
+  const tva = `${request.body.tva}`;
+
+
+  const query = 'INSERT INTO facture (id_user, prenom, nom, adresse, pays, commune, codePostal, produit, prix, quantite, tva) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+  connection.query(query, ["5", prenom, nom, adresse, pays, commune, codePostal, produit, prix, quantite, tva], (err: any, result: any) => {
+    if(err) throw err; 
+    console.log('Données insérées avec succès dans la base de données');
+  });
+
 });
+
+// -- 
+
+app.use(Express.urlencoded({ extended: true }));
+
+app.post('/inscription', (req: Request, res: Response) => {
+  const { firstName, secondName, email, mdp } = req.body;
+
+  const query = 'INSERT INTO users (prenom, nom, email, mdp) VALUES (?, ?, ?, ?)'; 
+
+  connection.query(query, [firstName, secondName, email, mdp], (err, result) => {
+    if (err) {
+      console.error('Erreur lors de l\'insertion dans la base de données:', err);
+      return res.status(500).send('Erreur lors de l\'inscription');
+    }
+    console.log('Utilisateur inscrit avec succès');
+    res.send('Inscription réussie');
+  });
+});
+
+// --
 
 app.use('/public', Express.static(join('assets')));
 
